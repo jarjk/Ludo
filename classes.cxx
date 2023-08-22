@@ -1,621 +1,181 @@
-/* 2023-05-10
- * so this is ludo / ki nevet a végén / Mensch, ärgere dich nicht!
- * It would be nice to know whether it works or just looks like.
- * But that'd require many many tests which I don't want to perform.
- * I'd like to have some kind of smooth_out.
- * The pretty_out is now capable of printing houses. A bit more beautiful than
- * in the last version. Also a the code is somewhat better.
- */
-
-// includes
-#include <array>
 #include <chrono>
 #include <iostream>
+#include <random>
 #include <string>
 #include <thread>
+#include <vector>
 
-/* the following are UBUNTU/LINUX, and macOS ONLY terminal color codes,
- * but it works in Windows 10 too under VS2019.*/
-constexpr auto RESET = "\033[0m";
-constexpr auto BLUE = "\033[34m" /* Blue */;
-constexpr auto RED = "\033[31m" /* Red */;
-constexpr auto GREEN = "\033[32m" /* Green */;
-constexpr auto YELLOW = "\033[33m" /* Yellow */;
+using std::cout;
+using std::string;
+using std::vector;
 
-// gameboard: nothing: _ = 0, Blue: 1, Red: 2, Green: 3, Yellow: 4
-std::array<int, 52> board{};
-
-// the class that contains data for each colour
-class Colours {
+class Ludo {
   private:
-    // the place between where their round ends and the board.
-    std::array<bool, 5> waitingboard{};
-    /* this is where they're before starting the game. They also get back here
-     * if kicked out. starts as full*/
-    std::array<bool, 4> waitingroom{true, true, true, true};
-    // the place where they get when finished
-    std::array<bool, 4> house{};
-    /* have they been to the end of the board? needed for red, green, yellow*/
-    bool was_at_the_end{};
-    /* the current number they'll have to go.*/
-    int current{};
-    /* it shows where each of the players currently are.*/
-    int onboard = -1;
-    /* */
-    int idx{};
-    /* */
-    int idx_house{};
-    /* it shows the number of times they've been knocked out */
-    int knock_out_num{};
-    /* the startfield on the board*/
-    int start{};
-    /* the field on which they last step before going to the waitingboard or
-     * house.*/
-    int end{};
-    /* identification of Blue: 1, Red: 2, Green: 3, Yellow: 4 */
-    int colour_num{};
+    vector<int> board;
+    int round_num = 0;
+    const string show_as;
 
   public:
-    Colours(const int &tmp_start, const int &tmp_end, const int &tmp_colour_num)
-        : start(tmp_start), end(tmp_end), colour_num(tmp_colour_num) {}
+    Ludo(const vector<int> &tmp_board, const string &tmp_show_as)
+        : board(tmp_board), show_as(tmp_show_as) {}
+    void set_board(const int &at, const int &num);
+    int get_board(const int &at);
+    class Functions {
+      public:
+        static void clear_term();
+        static void wait(const int &time);
+        static void change_colour(const int &colour_num);
+        static void change_colour(const string &colour);
+    };
+    class Colours {
+      private:
+        // The number used for identifying the colour.
+        const int colour_num;
+        // Start on the board.
+        const int start;
+        // End on the board.
+        const int end;
+        string colour_name;
+        // It shows where each of the players currently are.
+        int onboard = -1;
 
-    /* functions */
+        // The number of steps it has to go.
+        int current_throw{};
+        /* This is where they're before starting the game. They also get back
+         * here if kicked out. Starts as full. */
+        vector<bool> waitingroom = {true, true, true, true};
+        int waitingroom_idx{};
+        // the place they have to reach
+        vector<bool> house;
+        int house_idx{};
+        // place between house and board
+        vector<bool> waitingboard;
 
-    /* It's a function that throws the cube. */
-    void throw_cube();
+        bool was_at_the_end{};
+        int knockout_num{};
 
-    /* It's checking if an array of four is empty. */
-    static bool full_four(std::array<bool, 4> arr);
-
-    /* It's checking if the game is over. */
-    static bool end_of_game();
-
-    /* It's playing one round. */
-    static void round();
-
-    /* It's clearing the terminal. And it's CROSS-PLATFORM! */
-    static void clear_term();
-
-    // cross-platform wait
-    static void wait_term();
-
-    // is there a player from this colour on the board?
-    bool is_on_board();
-
-    // please kick each other, because there is not enough space for two on only
-    // one field of the board
-    static void knock_out(Colours &tmp);
-
-    // array of five is not empty
-    static bool not_empty_five(std::array<bool, 5> arr);
-
-    // round for red, green, yellow
-    static void rgy(Colours &tmp);
-
-    // needs to go home, because it's been kicked out.
-    static void go_home(Colours &color);
-
-    /* the function for printing the whole stuff to console */
-    static void pretty_out();
-
-    /* some kind of fill thing for pretty out. */
-    static std::string fill(const int &num);
-
-    /* print the waitingboard for pretty_out */
-    static std::string print_wboard(const Colours &color, int num);
-
-    /* printing board for pretty_out */
-    static std::string print_board(const int &num);
-
-    /* printing waiting rooms */
-    static std::string print_wroom(const Colours &color, int num);
-
-    /* printing houses for pretty_out */
-    static std::string print_house(const Colours &color, int num);
+      public:
+        Colours(const int &tmp_start, const int &tmp_end,
+                const int &tmp_colour_num)
+            : start(tmp_start), end(tmp_end), colour_num(tmp_colour_num) {}
+        void throw_die();
+        bool full_house();
+        bool not_empty_waitingboard();
+        bool is_on_board();
+    };
 };
 
-// setting stuff should be a kind of constant i guess
-Colours blue(0, 50, 1);
-Colours red(13, 11, 2);
-Colours green(26, 24, 3);
-Colours yellow(39, 37, 4);
-
-// how should the figures look like on the board
-constexpr auto show_as = "▇▇";
-// counting the number of rounds
-int round_num = 0;
-
 int main() {
-    srand(time(nullptr));
+    vector<int> board_vect(52, 0);
+    Ludo ludo(board_vect, "▇▇");
 
-    Colours::clear_term();
+    Ludo::Colours Red(1, 0, 50);
+    Ludo::Colours Green(2, 13, 11);
+    Ludo::Colours Yellow(3, 26, 24);
+    Ludo::Colours Blue(4, 39, 37);
 
-    std::cout << "Are you ready to start this beautiful game? [Y/n] ";
-    std::string choice = "y";
-    getline(std::cin, choice, '\n');
-    if (choice.empty() || choice[0] == 'y' || choice[0] == 'Y') {
-        choice = "Y";
-        std::cout
-            << "Do you want to play a full game without doing anything? [Y/n] ";
-        getline(std::cin, choice, '\n');
-        if (choice.empty() || choice[0] == 'y' || choice[0] == 'Y') {
-            while (!Colours::end_of_game()) {
-                Colours::round();
-                Colours::pretty_out();
-            }
-        } else {
-            choice = 'y';
-            while (!Colours::end_of_game() &&
-                   (choice[0] == 'y' || choice[0] == 'Y' || choice.empty())) {
-                Colours::round();
-                Colours::pretty_out();
-                Colours::wait_term();
-                std::cout << "Can the next round begin? [Y/n] ";
-                getline(std::cin, choice, '\n');
-            }
-            Colours::pretty_out();
-        }
-    }
+    cout << "can we start?";
+    std::cin.get();
+
+    // Colours::Functions::clear_term();
+    // Colours::Functions::change_colour("blue");
+    // cout << "oyy\nwhatup\nis this good fun?";
+    // Colours::Functions::wait(1000000);
+    // Colours::Functions::clear_term();
+    // Colours::Functions::change_colour(1);
+    // cout << "cleared?\n";
+    // Colours::Functions::change_colour("green");
+    // cout << "changed colour?\n";
+    // Colours::Functions::change_colour("yellow");
+    // cout << "if yes, it\'s pretty cool!";
+    // Colours::Functions::change_colour(4);
+    // cout << "\t\"ain\'t it?\"";
+    // Colours::Functions::change_colour(0);
+
+    cout << "\n";
     return 0;
 }
 
-// it throws the dice, can easily be changed to manual dice roll
-void Colours::throw_cube() {
-    current = rand() % 6 + 1;
-    // current = std::random_device() * std::random_device() *
-    // std::random_device() ;
-    /* current = 0;
-       do {
-       std::cout << "What now: ";
-       std::cin >> current;
-    // 2147483647
-    } while (current < 1 || current > 6); */
+void Ludo::Functions::wait(const int &time) {
+    std::this_thread::sleep_for(std::chrono::microseconds(time));
 }
 
-// plays one round, made by making a function, that does it for each colour
-void Colours::round() {
-    blue.throw_cube();
-    // blue
-    {
-        // its waiting board is not empty
-        if (not_empty_five(blue.waitingboard)) {
-            if (blue.onboard + blue.current >= 5) {
-                blue.waitingboard[blue.onboard] = false;
-                blue.house[blue.idx_house] = true;
-                blue.onboard = 0;
-                blue.idx_house++;
-            } else {
-                blue.waitingboard[blue.onboard] = false;
-                blue.onboard = blue.current + blue.onboard;
-                blue.waitingboard[blue.onboard] = true;
-            }
-        }
-        // board is empty
-        else if (!blue.is_on_board()) {
-            // can go to the board from its waiting room
-            if (blue.current == 6) {
-                blue.onboard = blue.start;
-                knock_out(blue);
-                board[blue.onboard] = blue.colour_num;
-                blue.waitingroom[blue.idx] = false;
-                blue.idx++;
-            }
-        }
-        // waitingroom not full_four
-        // not near its house
-        else if (blue.onboard + blue.current <= blue.end) {
-            board[blue.onboard] = 0;
-            blue.onboard += blue.current;
-            knock_out(blue);
-            board[blue.onboard] = blue.colour_num;
-        }
-        // so cool, that from the board it goes directly into the house
-        else if (blue.onboard + blue.current == blue.end + 6) {
-            board[blue.onboard] = 0;
-            blue.house[blue.idx_house] = true;
-            blue.idx_house++;
-        }
-        // near the house, needs to go to waitingboard (pl.:48-ason van 5ot
-        // dobott)
-        else if (blue.onboard + blue.current <= blue.end + 5) {
-            board[blue.onboard] = 0;
-            blue.onboard = blue.current - (blue.end - blue.onboard) - 1;
-            blue.waitingboard[blue.onboard] = true;
-        }
-    }
-    pretty_out();
-    rgy(red);
-    pretty_out();
-    rgy(green);
-    pretty_out();
-    rgy(yellow);
-    round_num++;
+void Ludo::Colours::throw_die() {
+    std::mt19937 mt{std::random_device{}()};
+    std::uniform_int_distribution<> die6{1, 6};
+    current_throw = die6(mt);
 }
 
-// one round, unfortunately doesn't work for blue, so its red, green, yellow
-void Colours::rgy(Colours &tmp) {
-    tmp.throw_cube();
-    // its waiting board is not empty
-    if (not_empty_five(tmp.waitingboard)) {
-        // goes directly into its house
-        if (tmp.onboard + tmp.current >= 5) {
-            tmp.waitingboard[tmp.onboard] = false;
-            tmp.house[tmp.idx_house] = true;
-            tmp.onboard = 0;
-            tmp.idx_house++;
-        }
-        // goes into its house slowly
-        else {
-            tmp.waitingboard[tmp.onboard] = false;
-            tmp.onboard = tmp.onboard + tmp.current;
-            tmp.waitingboard[tmp.onboard] = true;
-        }
-    }
-    // board is empty
-    else if (!tmp.is_on_board()) {
-        // can go to the board from its waiting room
-        if (tmp.current == 6) {
-            tmp.onboard = tmp.start;
-            knock_out(tmp);
-            board[tmp.onboard] = tmp.colour_num;
-            tmp.waitingroom[tmp.idx] = false;
-            tmp.idx++;
-        }
-        // board is not empty
-    } else if (!tmp.was_at_the_end) {
-        // start movement
-        if (tmp.onboard + tmp.current < 52) {
-            board[tmp.onboard] = 0;
-            tmp.onboard += tmp.current;
-            knock_out(tmp);
-            board[tmp.onboard] = tmp.colour_num;
-        }
-        // needs to go to the start of the board
-        else if (tmp.onboard + tmp.current > 51) {
-            board[tmp.onboard] = 0;
-            tmp.onboard = tmp.current - (52 - tmp.onboard);
-            knock_out(tmp);
-            board[tmp.onboard] = tmp.colour_num;
-            tmp.was_at_the_end = true;
-        }
-    }
-    // start movement until it reaches the waiting board
-    else if (tmp.onboard + tmp.current <= tmp.end) {
-        board[tmp.onboard] = 0;
-        tmp.onboard += tmp.current;
-        knock_out(tmp);
-        board[tmp.onboard] = tmp.colour_num;
-    }
-    // goes right into house
-    else if (tmp.onboard + tmp.current == tmp.end + 6) {
-        board[tmp.onboard] = 0;
-        tmp.house[tmp.idx_house] = true;
-        tmp.idx_house++;
-        tmp.was_at_the_end = false;
-    }
-    // goes into its waiting board
-    else if (tmp.onboard + tmp.current <= tmp.end + 5) {
-        board[tmp.onboard] = 0;
-        tmp.onboard = tmp.current - (tmp.end - tmp.onboard) - 1;
-        tmp.waitingboard[tmp.onboard] = true;
-        tmp.was_at_the_end = false;
+void Ludo::Functions::clear_term() { cout << "\033[2J\033[1;1H"; }
+
+void Ludo::Functions::change_colour(const int &colour_num) {
+    switch (colour_num) {
+    case 0:
+        // reset
+        cout << "\033[0m";
+        break;
+    case 1:
+        // red
+        cout << "\033[31m";
+        break;
+    case 2:
+        // green
+        cout << "\033[32m";
+        break;
+    case 3:
+        // yellow
+        cout << "\033[33m";
+        break;
+    case 4:
+        // blue
+        cout << "\033[34m";
+        break;
+    default:
+        cout << "not good colour!";
     }
 }
 
-// clears terminal
-void Colours::clear_term() {
-    std::cout << "\033[2J\033[1;1H";
-    /* #ifdef _WIN32
-       system("CLS");
-  #else
-  system("clear");
-  #endif */
-}
-
-// cross-platform wait
-void Colours::wait_term() {
-    std::this_thread::sleep_for(std::chrono::microseconds(4000));
-}
-
-// is there a figure from this colour on the board?
-bool Colours::is_on_board() {
-    int idx = 0;
-    while (board[idx] != colour_num && idx < 52) {
-        idx++;
+void Ludo::Functions::change_colour(const string &colour) {
+    if (colour == "reset") {
+        cout << "\033[0m";
+    } else if (colour == "red") {
+        cout << "\033[31m";
+    } else if (colour == "green") {
+        cout << "\033[32m";
+    } else if (colour == "yellow") {
+        cout << "\033[33m";
+    } else if (colour == "blue") {
+        cout << "\033[34m";
+    } else {
+        cout << "not good colour!";
     }
-    return idx < 52;
 }
 
-// checks if an array of four is full
-bool Colours::full_four(std::array<bool, 4> arr) {
-    return arr[0] && arr[1] && arr[2] && arr[3];
-}
-
-// checks if an array of five is not empty
-bool Colours::not_empty_five(std::array<bool, 5> arr) {
-    return arr[0] || arr[1] || arr[2] || arr[3] || arr[4];
-}
-
-// checks if it's the end of the game
-bool Colours::end_of_game() {
-    if (full_four(blue.house) || full_four(red.house) ||
-        full_four(green.house) || full_four(yellow.house)) {
-        std::cout << "\nONE OF THE ANIMALS GOT TO THE END, HOORAY, "
-                     "HOORAY!\nNUMBER OF ALL KNOCKOUTS: "
-                  << blue.knock_out_num + red.knock_out_num +
-                         green.knock_out_num + yellow.knock_out_num
-                  << "\n";
-        return true;
+bool Ludo::Colours::full_house() {
+    if (house.size() == 4) {
+        return house.at(0) && house.at(1) && house.at(2) && house.at(3);
     }
+    cout << "something wronk with houses size";
+    std::cin.get();
     return false;
 }
 
-// functions that doesn't let two figures be on the same field
-void Colours::knock_out(Colours &tmp) {
-    if (board[tmp.onboard] != 0) {
-        switch (board[tmp.onboard]) {
-        case 1:
-            go_home(blue);
-            break;
-        case 2:
-            go_home(red);
-            break;
-        case 3:
-            go_home(green);
-            break;
-        case 4:
-            go_home(yellow);
-            break;
-        default:
-            std::cout << "___ERROR!___\n";
-            break;
-        }
-        std::cout << "\nA KNOCKOUT HAS HAPPENED (KO) \n";
-        std::cout << "number of current knockouts: " << BLUE
-                  << blue.knock_out_num << " " << RED << red.knock_out_num
-                  << " " << GREEN << green.knock_out_num << " " << YELLOW
-                  << yellow.knock_out_num << "\n";
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+void Ludo::set_board(const int &at, const int &num) { board.at(at) = num; }
+
+int Ludo::get_board(const int &at) { return board.at(at); }
+
+bool Ludo::Colours::not_empty_waitingboard() {
+    if (waitingboard.size() == 5) {
+        return waitingboard.at(0) || waitingboard.at(1) || waitingboard.at(2) ||
+               waitingboard.at(3) || waitingboard.at(4);
     }
+    cout << "something wronk with waitingboards size";
+    std::cin.get();
+    return false;
 }
 
-// if a figure's been kicked out, it needs to go back to its waitingroom
-void Colours::go_home(Colours &color) {
-    color.was_at_the_end = false;
-    color.onboard = 0;
-    color.idx--;
-    color.waitingroom[color.idx] = true;
-    color.knock_out_num++;
-}
-
-// pretty out
-void Colours::pretty_out() {
-    wait_term();
-    clear_term();
-
-    // 0
-    // std::cout << "╔" << fill(60, false, "═") << "╗\n";
-    // 1: 1/2
-    std::cout /*<< "║"*/ << RED << " " << red.current << RESET << "  "
-                         << fill(5) << print_board(23) << print_board(24)
-                         << print_board(25) << fill(5) << "  " << GREEN
-                         << green.current << " " << RESET << "\t" << round_num
-                         << "\n\n";
-
-    // 2: 1/2
-    std::cout << fill(6) << print_board(22) << print_wboard(green, 0)
-              << print_board(26) << fill(6) << "\n\n";
-
-    // 3: 1/2
-    std::cout << fill(2) << print_wroom(red, 0) << print_wroom(red, 1)
-              << fill(2) << print_board(21) << print_wboard(green, 1)
-              << print_board(27) << fill(2) << print_wroom(green, 0)
-              << print_wroom(green, 1) << fill(2) << "\n\n";
-
-    // 4: 1/2
-    std::cout << fill(2) << print_wroom(red, 2) << print_wroom(red, 3)
-              << fill(2) << print_board(20) << print_wboard(green, 2)
-              << print_board(28) << fill(2) << print_wroom(green, 2)
-              << print_wroom(green, 3) << fill(2) << "\n\n";
-
-    // 5: 1/2
-    std::cout << fill(6) << print_board(19) << print_wboard(green, 3)
-              << print_board(29) << fill(6) << "\n\n";
-
-    // 6: 1/2
-    std::cout << fill(6) << print_board(18) << print_wboard(green, 4)
-              << print_board(30) << fill(6) << "\n\n";
-
-    // 7: 1/2
-    std::cout << print_board(12) << print_board(13) << print_board(14)
-              << print_board(15) << print_board(16) << print_board(17)
-              << print_house(green, 0) << print_house(green, 1)
-              << print_house(green, 2) << print_house(green, 3) << " "
-              << print_house(yellow, 0) << print_board(31) << print_board(32)
-              << print_board(33) << print_board(34) << print_board(35)
-              << print_board(36) << "\n"
-              << fill(6) << print_house(red, 0) << "       "
-              << print_house(yellow, 1) << "\n";
-
-    // 8: 1/2
-    std::cout << print_board(11);
-    for (int i = 0; i < 5; i++) {
-        std::cout << print_wboard(red, i);
+bool Ludo::Colours::is_on_board() {
+    int i = 0;
+    while (i < 51 && get_board(i) != colour_num) {
     }
-    std::cout << print_house(red, 1) << "       " << print_house(yellow, 2);
-    for (int i = 5 - 1; i >= 0; i--) {
-        std::cout << print_wboard(yellow, i);
-    }
-    std::cout << print_board(37) << "\n"
-              << fill(6) << print_house(red, 2) << "       "
-              << print_house(yellow, 3) << "\n";
-
-    // 9: 1/2
-    std::cout << print_board(10) << print_board(9) << print_board(8)
-              << print_board(7) << print_board(6) << print_board(5)
-              << print_house(red, 3) << " " << print_house(blue, 0)
-              << print_house(blue, 1) << print_house(blue, 2)
-              << print_house(blue, 3) << print_board(43) << print_board(42)
-              << print_board(41) << print_board(40) << print_board(39)
-              << print_board(38) << "\n\n";
-
-    // 10: 1/2
-    std::cout << fill(6) << print_board(4) << print_wboard(blue, 4)
-              << print_board(44) << fill(6) << "\n\n";
-
-    // 11: 1/2
-    std::cout << fill(6) << print_board(3) << print_wboard(blue, 3)
-              << print_board(45) << fill(6) << "\n\n";
-
-    // 12: 1/2
-    std::cout << fill(2) << print_wroom(blue, 0) << print_wroom(blue, 1)
-              << fill(2) << print_board(2) << print_wboard(blue, 2)
-              << print_board(46) << fill(2) << print_wroom(yellow, 0)
-              << print_wroom(yellow, 1) << fill(2) << "\n\n";
-
-    // 13: 1/2
-    std::cout << fill(2) << print_wroom(blue, 2) << print_wroom(blue, 3)
-              << fill(2) << print_board(1) << print_wboard(blue, 1)
-              << print_board(47) << fill(2) << print_wroom(yellow, 2)
-              << print_wroom(yellow, 3) << fill(2) << "\n\n";
-
-    // 14: 1/2
-    std::cout << fill(6) << print_board(0) << print_wboard(blue, 0)
-              << print_board(48) << fill(6) << "\n\n";
-
-    // 15: 1/2
-    std::cout << " " << BLUE << blue.current << RESET << "  " << fill(5)
-              << print_board(51) << print_board(50) << print_board(49)
-              << fill(5) << YELLOW << "  " << yellow.current << RESET << " "
-              << "\n\n";
-}
-
-std::string Colours::fill(const int &num) {
-    std::string fill_with;
-    for (int i = 0; i < num; i++) {
-        // fill_with += " ██ ";
-        // fill_with += " ░░ ";
-        // fill_with += " ▆▆ ";
-        fill_with += "    ";
-    }
-    return fill_with;
-}
-
-std::string Colours::print_board(const int &num) {
-    std::string print_this = " ";
-    switch (board[num]) {
-    case 0:
-        print_this = " __";
-        break;
-    case 1:
-        print_this += BLUE;
-        print_this += show_as;
-        break;
-    case 2:
-        print_this += RED;
-        print_this += show_as;
-        break;
-    case 3:
-        print_this += GREEN;
-        print_this += show_as;
-        break;
-    case 4:
-        print_this += YELLOW;
-        print_this += show_as;
-        break;
-    default:
-        print_this = "___!!!error!!!___";
-    }
-    print_this += " ";
-    print_this += RESET;
-    return print_this;
-}
-
-std::string Colours::print_wboard(const Colours &color, int num) {
-    std::string print_this = " ..";
-    if (color.waitingboard[num]) {
-        print_this = " ";
-        switch (color.colour_num) {
-        case 1:
-            print_this += BLUE;
-            print_this += show_as;
-            break;
-        case 2:
-            print_this += RED;
-            print_this += show_as;
-            break;
-        case 3:
-            print_this += GREEN;
-            print_this += show_as;
-            break;
-        case 4:
-            print_this += YELLOW;
-            print_this += show_as;
-            break;
-        default:
-            print_this = "___!!!error!!!___";
-        }
-    }
-    print_this += " ";
-    print_this += RESET;
-    return print_this;
-}
-
-std::string Colours::print_wroom(const Colours &color, int num) {
-    std::string print_this = " ..";
-    if (color.waitingroom[num]) {
-        print_this = " ";
-        switch (color.colour_num) {
-        case 1:
-            print_this += BLUE;
-            print_this += show_as;
-            break;
-        case 2:
-            print_this += RED;
-            print_this += show_as;
-            break;
-        case 3:
-            print_this += GREEN;
-            print_this += show_as;
-            break;
-        case 4:
-            print_this += YELLOW;
-            print_this += show_as;
-            break;
-        default:
-            print_this = "___!!!error!!!___";
-        }
-    }
-    print_this += " ";
-    print_this += RESET;
-    return print_this;
-}
-
-std::string Colours::print_house(const Colours &color, int num) {
-    std::string print_this = "  ";
-    if (color.house[num]) {
-        print_this = " ";
-        switch (color.colour_num) {
-        case 1:
-            print_this += BLUE;
-            print_this += "▄";
-            break;
-        case 2:
-            print_this += RED;
-            print_this += "▄";
-            break;
-        case 3:
-            print_this += GREEN;
-            print_this += "▄";
-            break;
-        case 4:
-            print_this += YELLOW;
-            print_this += "▄";
-            break;
-        default:
-            print_this = "___!!!error!!!___";
-        }
-    }
-    print_this += RESET;
-    return print_this;
 }
