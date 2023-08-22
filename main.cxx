@@ -137,7 +137,6 @@ std::string print_wroom(const colour &color, int num);
 std::string print_house(const colour &color, int num);
 
 int main() {
-    srand(time(nullptr));
 
     // setting stuff should be a kind of constant i guess
     blue.start = 0;
@@ -404,7 +403,11 @@ void go_home(colour &color) {
 
 // it throws the dice, can easily be changed to manual dice roll
 void throw_cube(int &current) {
-    current = rand() % 6 + 1;
+    std::mt19937 mt{std::random_device{}()};
+    std::uniform_int_distribution<> die6{1, 6};
+    // current = rand() % 6 + 1;
+    current = die6(mt);
+
     // current = std::random_device() * std::random_device() *
     // std::random_device() ;
     /* current = 0;
