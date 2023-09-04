@@ -3,6 +3,7 @@
 #include <random>
 #include <string>
 #include <thread>
+#include <utility>
 #include <vector>
 
 using std::cout;
@@ -11,13 +12,15 @@ using std::vector;
 
 class Ludo {
   private:
-    vector<int> board;
+    mutable vector<int> game_board;
     int round_num = 0;
-    const string show_as;
+    const string show_as = "▇▇";
 
   public:
-    Ludo(const vector<int> &tmp_board, const string &tmp_show_as)
-        : board(tmp_board), show_as(tmp_show_as) {}
+    Ludo() = default;
+    explicit Ludo(string tmp_show_as) : show_as(std::move(tmp_show_as)) {}
+    Ludo(const vector<int> &tmp_board, string tmp_show_as)
+        : game_board(tmp_board), show_as(std::move(tmp_show_as)) {}
     void set_board(const int &at, const int &num);
     int get_board(const int &at);
     class Functions {
@@ -27,52 +30,52 @@ class Ludo {
         static void change_colour(const int &colour_num);
         static void change_colour(const string &colour);
     };
-    class Colours {
-      private:
-        // The number used for identifying the colour.
-        const int colour_num;
-        // Start on the board.
-        const int start;
-        // End on the board.
-        const int end;
-        string colour_name;
-        // It shows where each of the players currently are.
-        int onboard = -1;
+};
 
-        // The number of steps it has to go.
-        int current_throw{};
-        /* This is where they're before starting the game. They also get back
-         * here if kicked out. Starts as full. */
-        vector<bool> waitingroom = {true, true, true, true};
-        int waitingroom_idx{};
-        // the place they have to reach
-        vector<bool> house;
-        int house_idx{};
-        // place between house and board
-        vector<bool> waitingboard;
+class Colours {
+  private:
+    // The number used for identifying the colour.
+    const int colour_num;
+    // Start on the board.
+    const int start;
+    // End on the board.
+    const int end;
+    string colour_name;
+    // It shows where each of the players currently are.
+    int onboard = -1;
 
-        bool was_at_the_end{};
-        int knockout_num{};
+    // The number of steps it has to go.
+    int current_throw{};
+    /* This is where they're before starting the game. They also get back
+     * here if kicked out. Starts as full. */
+    vector<bool> waitingroom = {true, true, true, true};
+    int waitingroom_idx{};
+    // the place they have to reach
+    vector<bool> house;
+    int house_idx{};
+    // place between house and board
+    vector<bool> waitingboard;
 
-      public:
-        Colours(const int &tmp_start, const int &tmp_end,
-                const int &tmp_colour_num)
-            : start(tmp_start), end(tmp_end), colour_num(tmp_colour_num) {}
-        void throw_die();
-        bool full_house();
-        bool not_empty_waitingboard();
-        bool is_on_board();
-    };
+    bool was_at_the_end{};
+    int knockout_num{};
+
+  public:
+    Colours(const int &tmp_start, const int &tmp_end, const int &tmp_colour_num)
+        : start(tmp_start), end(tmp_end), colour_num(tmp_colour_num) {}
+    void throw_die();
+    bool full_house();
+    bool not_empty_waitingboard();
+    bool is_on_board(const vector<int> &tmp_board) const;
 };
 
 int main() {
-    vector<int> board_vect(52, 0);
-    Ludo ludo(board_vect, "▇▇");
+    vector<int> game_board(52, 0);
+    Ludo ludo;
 
-    Ludo::Colours Red(1, 0, 50);
-    Ludo::Colours Green(2, 13, 11);
-    Ludo::Colours Yellow(3, 26, 24);
-    Ludo::Colours Blue(4, 39, 37);
+    Colours Red(1, 0, 50);
+    Colours Green(2, 13, 11);
+    Colours Yellow(3, 26, 24);
+    Colours Blue(4, 39, 37);
 
     cout << "can we start?";
     std::cin.get();
@@ -100,7 +103,7 @@ void Ludo::Functions::wait(const int &time) {
     std::this_thread::sleep_for(std::chrono::microseconds(time));
 }
 
-void Ludo::Colours::throw_die() {
+void Colours::throw_die() {
     std::mt19937 mt{std::random_device{}()};
     std::uniform_int_distribution<> die6{1, 6};
     current_throw = die6(mt);
@@ -151,7 +154,7 @@ void Ludo::Functions::change_colour(const string &colour) {
     }
 }
 
-bool Ludo::Colours::full_house() {
+bool Colours::full_house() {
     if (house.size() == 4) {
         return house.at(0) && house.at(1) && house.at(2) && house.at(3);
     }
@@ -160,11 +163,11 @@ bool Ludo::Colours::full_house() {
     return false;
 }
 
-void Ludo::set_board(const int &at, const int &num) { board.at(at) = num; }
+void Ludo::set_board(const int &at, const int &num) { game_board.at(at) = num; }
 
-int Ludo::get_board(const int &at) { return board.at(at); }
+int Ludo::get_board(const int &at) { return game_board.at(at); }
 
-bool Ludo::Colours::not_empty_waitingboard() {
+bool Colours::not_empty_waitingboard() {
     if (waitingboard.size() == 5) {
         return waitingboard.at(0) || waitingboard.at(1) || waitingboard.at(2) ||
                waitingboard.at(3) || waitingboard.at(4);
@@ -174,8 +177,10 @@ bool Ludo::Colours::not_empty_waitingboard() {
     return false;
 }
 
-bool Ludo::Colours::is_on_board() {
+bool Colours::is_on_board(const vector<int> &tmp_board) const {
     int i = 0;
-    while (i < 51 && get_board(i) != colour_num) {
+    while (i < tmp_board.size() && tmp_board.at(i) != colour_num) {
+        i++;
     }
+    return i < tmp_board.size();
 }

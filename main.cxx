@@ -3,7 +3,7 @@
  * It would be nice to know whether it works or just looks like it does.
  * Requires many many tests which I don't want to perform. Would be nice to have
  * some kind of smooth_out. The pretty_out is now capable of printing houses.
- * Also should be rewritten to be OOP. */
+ * TODO: Also should be rewritten to comply to OOP. */
 
 // includes
 #include <array>
@@ -15,6 +15,11 @@
 #include <string>
 #include <thread>
 
+using std::array;
+using std::cin;
+using std::cout;
+using std::string;
+
 /* the following are UBUNTU/LINUX, and macOS ONLY terminal color codes,
  * but it works in Windows 10 too under VS2019.*/
 constexpr auto RESET = "\033[0m";   // standard colour
@@ -24,17 +29,17 @@ constexpr auto GREEN = "\033[32m";  // Green
 constexpr auto YELLOW = "\033[33m"; // Yellow
 
 // gameboard: nothing: _ = 0, Blue: 1, Red: 2, Green: 3, Yellow: 4
-std::array<int, 52> board{};
+array<int, 52> board{};
 
 // the structure that contains data for each colour
 struct colour {
     // the place between where their round ends and the board.
-    std::array<bool, 5> waitingboard{};
+    array<bool, 5> waitingboard{};
     /* this is where they're before starting the game. They also get back here
      * if kicked out. starts as full*/
-    std::array<bool, 4> waitingroom{true, true, true, true};
+    array<bool, 4> waitingroom{true, true, true, true};
     // the place where they get when finished
-    std::array<bool, 4> house{};
+    array<bool, 4> house{};
     /* have they been to the end of the board? needed for red, green, yellow*/
     bool was_at_the_end{};
     /* the current number they'll have to go.*/
@@ -69,7 +74,7 @@ int round_num = 0;
 void throw_cube(int &current);
 
 /* It's checking if an array of four is empty. */
-bool full_four(std::array<bool, 4> arr);
+bool full_four(array<bool, 4> arr);
 
 /* It's checking if the game is over. */
 bool end();
@@ -82,6 +87,7 @@ void clear_term();
 
 // cross-platform wait
 void wait_term();
+void wait_term(const int &microseconds);
 
 // is there a player from this colour on the board?
 bool is_on_board(const int &color);
@@ -91,7 +97,7 @@ bool is_on_board(const int &color);
 void knock_out(colour &tmp);
 
 // array of five is not empty
-bool not_empty_five(std::array<bool, 5> arr);
+bool not_empty_five(array<bool, 5> arr);
 
 // round for red, green, yellow
 void rgy(colour &tmp);
@@ -103,19 +109,19 @@ void go_home(colour &color);
 void pretty_out();
 
 /* some kind of fill thing for pretty out. */
-std::string fill(const int &num);
+string fill(const int &num);
 
 /* print the waitingboard for pretty_out */
-std::string print_wboard(const colour &color, int num);
+string print_wboard(const colour &color, int num);
 
 /* printing board for pretty_out */
-std::string print_board(const int &num);
+string print_board(const int &num);
 
 /* printing waiting rooms */
-std::string print_wroom(const colour &color, int num);
+string print_wroom(const colour &color, int num);
 
 /* printing houses for pretty_out */
-std::string print_house(const colour &color, int num);
+string print_house(const colour &color, int num);
 
 int main() {
 
@@ -137,14 +143,14 @@ int main() {
 
     clear_term();
 
-    std::cout << "Are you ready to start this beautiful game? [Y/n] ";
-    std::string choice = "y";
-    getline(std::cin, choice, '\n');
+    cout << "Are you ready to start this beautiful game? [Y/n] ";
+    string choice = "y";
+    getline(cin, choice, '\n');
     if (choice.empty() || choice[0] == 'y' || choice[0] == 'Y') {
         choice = "Y";
-        std::cout
+        cout
             << "Do you want to play a full game without doing anything? [Y/n] ";
-        getline(std::cin, choice, '\n');
+        getline(cin, choice, '\n');
         if (choice.empty() || choice[0] == 'y' || choice[0] == 'Y') {
             while (!end()) {
                 round();
@@ -157,8 +163,8 @@ int main() {
                 round();
                 pretty_out();
                 wait_term();
-                std::cout << "Can the next round begin? [Y/n] ";
-                getline(std::cin, choice, '\n');
+                cout << "Can the next round begin? [Y/n] ";
+                getline(cin, choice, '\n');
             }
             pretty_out();
         }
@@ -298,7 +304,7 @@ void rgy(colour &tmp) {
 
 // clears terminal
 void clear_term() {
-    std::cout << "\033[2J\033[1;1H";
+    cout << "\033[2J\033[1;1H";
     /* #ifdef _WIN32
        system("CLS");
   #else
@@ -309,6 +315,9 @@ void clear_term() {
 // cross-platform wait
 void wait_term() {
     std::this_thread::sleep_for(std::chrono::microseconds(4000));
+}
+void wait_term(const int &microseconds) {
+    std::this_thread::sleep_for(std::chrono::microseconds(microseconds));
 }
 
 // is there a figure from this colour on the board?
@@ -321,12 +330,12 @@ bool is_on_board(const int &color) {
 }
 
 // checks if an array of four is full
-bool full_four(std::array<bool, 4> arr) {
+bool full_four(array<bool, 4> arr) {
     return arr[0] && arr[1] && arr[2] && arr[3];
 }
 
 // checks if an array of five is not empty
-bool not_empty_five(std::array<bool, 5> arr) {
+bool not_empty_five(array<bool, 5> arr) {
     return arr[0] || arr[1] || arr[2] || arr[3] || arr[4];
 }
 
@@ -334,11 +343,11 @@ bool not_empty_five(std::array<bool, 5> arr) {
 bool end() {
     if (full_four(blue.house) || full_four(red.house) ||
         full_four(green.house) || full_four(yellow.house)) {
-        std::cout << "\nONE OF THE ANIMALS GOT TO THE END, HOORAY, "
-                     "HOORAY!\nNUMBER OF ALL KNOCKOUTS: "
-                  << blue.knock_out_num + red.knock_out_num +
-                         green.knock_out_num + yellow.knock_out_num
-                  << "\n";
+        cout << "\nONE OF THE ANIMALS GOT TO THE END, HOORAY, "
+                "HOORAY!\nNUMBER OF ALL KNOCKOUTS: "
+             << blue.knock_out_num + red.knock_out_num + green.knock_out_num +
+                    yellow.knock_out_num
+             << "\n";
         return true;
     }
     return false;
@@ -361,15 +370,16 @@ void knock_out(colour &tmp) {
             go_home(yellow);
             break;
         default:
-            std::cout << "___ERROR!___\n";
+            cout << "___ERROR!___\n";
             break;
         }
-        std::cout << "\nA KNOCKOUT HAS HAPPENED (KO) \n";
-        std::cout << "number of current knockouts: " << BLUE
-                  << blue.knock_out_num << " " << RED << red.knock_out_num
-                  << " " << GREEN << green.knock_out_num << " " << YELLOW
-                  << yellow.knock_out_num << "\n";
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        cout << "\nA KNOCKOUT HAS HAPPENED (KO) \n";
+        cout << "number of current knockouts: " << BLUE << blue.knock_out_num
+             << " " << RED << red.knock_out_num << " " << GREEN
+             << green.knock_out_num << " " << YELLOW << yellow.knock_out_num
+             << "\n";
+        // std::this_thread::sleep_for(std::chrono::seconds(1));
+        wait_term(1000000);
     }
 }
 
@@ -389,12 +399,12 @@ void throw_cube(int &current) {
     // current = rand() % 6 + 1;
     current = die6(mt);
 
-    // current = std::random_device() * std::random_device() *
-    // std::random_device() ;
+    // current = random_device() * std::random_device() *
+    // random_device() ;
     /* current = 0;
        do {
-       std::cout << "What now: ";
-       std::cin >> current;
+       cout << "What now: ";
+       cin >> current;
     // 2147483647
     } while (current < 1 || current > 6); */
 }
@@ -405,104 +415,102 @@ void pretty_out() {
     clear_term();
 
     // 0
-    // std::cout << "╔" << fill(60, false, "═") << "╗\n";
+    // cout << "╔" << fill(60, false, "═") << "╗\n";
     // 1: 1/2
-    std::cout /*<< "║"*/ << RED << " " << red.current << RESET << "  "
-                         << fill(5) << print_board(23) << print_board(24)
-                         << print_board(25) << fill(5) << "  " << GREEN
-                         << green.current << " " << RESET << "\t" << round_num
-                         << "\n\n";
+    cout /*<< "║"*/ << RED << " " << red.current << RESET << "  " << fill(5)
+                    << print_board(23) << print_board(24) << print_board(25)
+                    << fill(5) << "  " << GREEN << green.current << " " << RESET
+                    << "\t" << round_num << "\n\n";
 
     // 2: 1/2
-    std::cout << fill(6) << print_board(22) << print_wboard(green, 0)
-              << print_board(26) << fill(6) << "\n\n";
+    cout << fill(6) << print_board(22) << print_wboard(green, 0)
+         << print_board(26) << fill(6) << "\n\n";
 
     // 3: 1/2
-    std::cout << fill(2) << print_wroom(red, 0) << print_wroom(red, 1)
-              << fill(2) << print_board(21) << print_wboard(green, 1)
-              << print_board(27) << fill(2) << print_wroom(green, 0)
-              << print_wroom(green, 1) << fill(2) << "\n\n";
+    cout << fill(2) << print_wroom(red, 0) << print_wroom(red, 1) << fill(2)
+         << print_board(21) << print_wboard(green, 1) << print_board(27)
+         << fill(2) << print_wroom(green, 0) << print_wroom(green, 1) << fill(2)
+         << "\n\n";
 
     // 4: 1/2
-    std::cout << fill(2) << print_wroom(red, 2) << print_wroom(red, 3)
-              << fill(2) << print_board(20) << print_wboard(green, 2)
-              << print_board(28) << fill(2) << print_wroom(green, 2)
-              << print_wroom(green, 3) << fill(2) << "\n\n";
+    cout << fill(2) << print_wroom(red, 2) << print_wroom(red, 3) << fill(2)
+         << print_board(20) << print_wboard(green, 2) << print_board(28)
+         << fill(2) << print_wroom(green, 2) << print_wroom(green, 3) << fill(2)
+         << "\n\n";
 
     // 5: 1/2
-    std::cout << fill(6) << print_board(19) << print_wboard(green, 3)
-              << print_board(29) << fill(6) << "\n\n";
+    cout << fill(6) << print_board(19) << print_wboard(green, 3)
+         << print_board(29) << fill(6) << "\n\n";
 
     // 6: 1/2
-    std::cout << fill(6) << print_board(18) << print_wboard(green, 4)
-              << print_board(30) << fill(6) << "\n\n";
+    cout << fill(6) << print_board(18) << print_wboard(green, 4)
+         << print_board(30) << fill(6) << "\n\n";
 
     // 7: 1/2
-    std::cout << print_board(12) << print_board(13) << print_board(14)
-              << print_board(15) << print_board(16) << print_board(17)
-              << print_house(green, 0) << print_house(green, 1)
-              << print_house(green, 2) << print_house(green, 3) << " "
-              << print_house(yellow, 0) << print_board(31) << print_board(32)
-              << print_board(33) << print_board(34) << print_board(35)
-              << print_board(36) << "\n"
-              << fill(6) << print_house(red, 0) << "       "
-              << print_house(yellow, 1) << "\n";
+    cout << print_board(12) << print_board(13) << print_board(14)
+         << print_board(15) << print_board(16) << print_board(17)
+         << print_house(green, 0) << print_house(green, 1)
+         << print_house(green, 2) << print_house(green, 3) << " "
+         << print_house(yellow, 0) << print_board(31) << print_board(32)
+         << print_board(33) << print_board(34) << print_board(35)
+         << print_board(36) << "\n"
+         << fill(6) << print_house(red, 0) << "       "
+         << print_house(yellow, 1) << "\n";
 
     // 8: 1/2
-    std::cout << print_board(11);
+    cout << print_board(11);
     for (int i = 0; i < 5; i++) {
-        std::cout << print_wboard(red, i);
+        cout << print_wboard(red, i);
     }
-    std::cout << print_house(red, 1) << "       " << print_house(yellow, 2);
+    cout << print_house(red, 1) << "       " << print_house(yellow, 2);
     for (int i = 5 - 1; i >= 0; i--) {
-        std::cout << print_wboard(yellow, i);
+        cout << print_wboard(yellow, i);
     }
-    std::cout << print_board(37) << "\n"
-              << fill(6) << print_house(red, 2) << "       "
-              << print_house(yellow, 3) << "\n";
+    cout << print_board(37) << "\n"
+         << fill(6) << print_house(red, 2) << "       "
+         << print_house(yellow, 3) << "\n";
 
     // 9: 1/2
-    std::cout << print_board(10) << print_board(9) << print_board(8)
-              << print_board(7) << print_board(6) << print_board(5)
-              << print_house(red, 3) << " " << print_house(blue, 0)
-              << print_house(blue, 1) << print_house(blue, 2)
-              << print_house(blue, 3) << print_board(43) << print_board(42)
-              << print_board(41) << print_board(40) << print_board(39)
-              << print_board(38) << "\n\n";
+    cout << print_board(10) << print_board(9) << print_board(8)
+         << print_board(7) << print_board(6) << print_board(5)
+         << print_house(red, 3) << " " << print_house(blue, 0)
+         << print_house(blue, 1) << print_house(blue, 2) << print_house(blue, 3)
+         << print_board(43) << print_board(42) << print_board(41)
+         << print_board(40) << print_board(39) << print_board(38) << "\n\n";
 
     // 10: 1/2
-    std::cout << fill(6) << print_board(4) << print_wboard(blue, 4)
-              << print_board(44) << fill(6) << "\n\n";
+    cout << fill(6) << print_board(4) << print_wboard(blue, 4)
+         << print_board(44) << fill(6) << "\n\n";
 
     // 11: 1/2
-    std::cout << fill(6) << print_board(3) << print_wboard(blue, 3)
-              << print_board(45) << fill(6) << "\n\n";
+    cout << fill(6) << print_board(3) << print_wboard(blue, 3)
+         << print_board(45) << fill(6) << "\n\n";
 
     // 12: 1/2
-    std::cout << fill(2) << print_wroom(blue, 0) << print_wroom(blue, 1)
-              << fill(2) << print_board(2) << print_wboard(blue, 2)
-              << print_board(46) << fill(2) << print_wroom(yellow, 0)
-              << print_wroom(yellow, 1) << fill(2) << "\n\n";
+    cout << fill(2) << print_wroom(blue, 0) << print_wroom(blue, 1) << fill(2)
+         << print_board(2) << print_wboard(blue, 2) << print_board(46)
+         << fill(2) << print_wroom(yellow, 0) << print_wroom(yellow, 1)
+         << fill(2) << "\n\n";
 
     // 13: 1/2
-    std::cout << fill(2) << print_wroom(blue, 2) << print_wroom(blue, 3)
-              << fill(2) << print_board(1) << print_wboard(blue, 1)
-              << print_board(47) << fill(2) << print_wroom(yellow, 2)
-              << print_wroom(yellow, 3) << fill(2) << "\n\n";
+    cout << fill(2) << print_wroom(blue, 2) << print_wroom(blue, 3) << fill(2)
+         << print_board(1) << print_wboard(blue, 1) << print_board(47)
+         << fill(2) << print_wroom(yellow, 2) << print_wroom(yellow, 3)
+         << fill(2) << "\n\n";
 
     // 14: 1/2
-    std::cout << fill(6) << print_board(0) << print_wboard(blue, 0)
-              << print_board(48) << fill(6) << "\n\n";
+    cout << fill(6) << print_board(0) << print_wboard(blue, 0)
+         << print_board(48) << fill(6) << "\n\n";
 
     // 15: 1/2
-    std::cout << " " << BLUE << blue.current << RESET << "  " << fill(5)
-              << print_board(51) << print_board(50) << print_board(49)
-              << fill(5) << YELLOW << "  " << yellow.current << RESET << " "
-              << "\n\n";
+    cout << " " << BLUE << blue.current << RESET << "  " << fill(5)
+         << print_board(51) << print_board(50) << print_board(49) << fill(5)
+         << YELLOW << "  " << yellow.current << RESET << " "
+         << "\n\n";
 }
 
-std::string fill(const int &num) {
-    std::string fill_with;
+string fill(const int &num) {
+    string fill_with;
     for (int i = 0; i < num; i++) {
         // fill_with += " ██ ";
         // fill_with += " ░░ ";
@@ -512,8 +520,8 @@ std::string fill(const int &num) {
     return fill_with;
 }
 
-std::string print_board(const int &num) {
-    std::string print_this = " ";
+string print_board(const int &num) {
+    string print_this = " ";
     switch (board[num]) {
     case 0:
         print_this = " __";
@@ -542,8 +550,8 @@ std::string print_board(const int &num) {
     return print_this;
 }
 
-std::string print_wboard(const colour &color, int num) {
-    std::string print_this = " ..";
+string print_wboard(const colour &color, int num) {
+    string print_this = " ..";
     if (color.waitingboard[num]) {
         print_this = " ";
         switch (color.colour_num) {
@@ -572,8 +580,8 @@ std::string print_wboard(const colour &color, int num) {
     return print_this;
 }
 
-std::string print_wroom(const colour &color, int num) {
-    std::string print_this = " ..";
+string print_wroom(const colour &color, int num) {
+    string print_this = " ..";
     if (color.waitingroom[num]) {
         print_this = " ";
         switch (color.colour_num) {
@@ -602,8 +610,8 @@ std::string print_wroom(const colour &color, int num) {
     return print_this;
 }
 
-std::string print_house(const colour &color, int num) {
-    std::string print_this = "  ";
+string print_house(const colour &color, int num) {
+    string print_this = "  ";
     if (color.house[num]) {
         print_this = " ";
         switch (color.colour_num) {
