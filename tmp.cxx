@@ -4,10 +4,9 @@
 #include <string>
 #include <vector>
 // the following are UBUNTU/LINUX, and MacOS ONLY terminal color codes.
-#define RESET "\033[0m"
-#define BLACK "\033[30m" /* Black */
+// #define RESET "\033[0m"
+// #define BLACK "\033[30m"              /* Black */
 // #define RED "\033[31m"                /* Red */
-constexpr auto RED = "\033[31m" /* Red */;
 // #define GREEN "\033[32m"              /* Green */
 // #define YELLOW "\033[33m"             /* Yellow */
 // #define BLUE "\033[34m"               /* Blue */
@@ -21,9 +20,11 @@ constexpr auto RED = "\033[31m" /* Red */;
 // #define BOLDBLUE "\033[1m\033[34m"    /* Bold Blue */
 // #define BOLDMAGENTA "\033[1m\033[35m" /* Bold Magenta */
 // #define BOLDCYAN "\033[1m\033[36m"    /* Bold Cyan */
-// #define BOLDWHITE \
-//     "\033[1m\033[37m" /* Bold White */ \
-//     }
+// #define BOLDWHITE "\033[1m\033[37m"   /* Bold White */ \
+
+constexpr auto RESET = "\033[0m";
+constexpr auto BLACK = "\033[30m";
+constexpr auto RED = "\033[31m";
 constexpr auto GREEN = "\033[32m";              /* Green */
 constexpr auto YELLOW = "\033[33m";             /* Yellow */
 constexpr auto BLUE = "\033[34m";               /* Blue */
@@ -40,38 +41,38 @@ constexpr auto BOLDCYAN = "\033[1m\033[36m";    /* Bold Cyan */
 constexpr auto BOLDWHITE = "\033[1m\033[37m";   /* Bold White */
 
 int main() {
-  srand(time(nullptr));
-  std::vector<int> m;
+    srand(time(nullptr));
+    std::vector<int> m;
 
-  std::cout << "How many numbers? ";
-  int num = 0;
-  std::cin >> num;
+    std::cout << "How many numbers? ";
+    int num = 0;
+    std::cin >> num;
 
-  // init
-  m.reserve(num);
-  for (int i = 0; i < num; i++) {
-    m.push_back(std::rand() % 2);
-  }
-  for (int i : m) {
-    std::cout << BOLDGREEN << i
-              << " " /*  << i << " " << i << " " << i << " " << i << " " <<
-                        i << " " << i << " " << i << "\n" */
-        ;
-  }
-  std::cout << "\n" << RESET;
-  /* std::cout << GREEN << "\nHello " << RESET << "World" << RED << "!\n";
-  std::cout << RESET << "Okay, now this is basic.\n"
-            << BLACK << "but this is said to be black\n"
-            << BOLDCYAN << "its not only cyan, but its also bold.\n";
-  std::string str = GREEN;
-  std::string stred = RED;
-  stred += "now id like youtu wrkplease ";
-  stred += GREEN;
-  stred += " greenworks GMBH thankyou.\n";
-  std::cout << str + "noway that #define worksbutconstexpr doesnt.\t" +
-                   WHITE + "am i as white as i sound?\n" + BOLDMAGENTA
-            << "HelloWorld(magentabold)" << stred << "\tred with constexpr\n"
-            << RESET << "RESETed text now."; */
+    // init
+    m.reserve(num);
+    for (int i = 0; i < num; i++) {
+        m.push_back(std::rand() % 2);
+    }
+    for (int i : m) {
+        std::cout << BOLDGREEN << i
+                  << " " /*  << i << " " << i << " " << i << " " << i << " " <<
+                            i << " " << i << " " << i << "\n" */
+            ;
+    }
+    std::cout << "\n" << RESET;
+    /* std::cout << GREEN << "\nHello " << RESET << "World" << RED << "!\n";
+    std::cout << RESET << "Okay, now this is basic.\n"
+              << BLACK << "but this is said to be black\n"
+              << BOLDCYAN << "its not only cyan, but its also bold.\n";
+    std::string str = GREEN;
+    std::string stred = RED;
+    stred += "now id like youtu wrkplease ";
+    stred += GREEN;
+    stred += " greenworks GMBH thankyou.\n";
+    std::cout << str + "noway that #define worksbutconstexpr doesnt.\t" +
+                     WHITE + "am i as white as i sound?\n" + BOLDMAGENTA
+              << "HelloWorld(magentabold)" << stred << "\tred with constexpr\n"
+              << RESET << "RESETed text now."; */
 
-  return 0;
+    return 0;
 }
