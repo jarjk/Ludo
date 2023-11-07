@@ -8,8 +8,7 @@ add_executable(ludo main.cxx)
 
 install(TARGETS ludo DESTINATION "~/.local/bin")
 
-add_custom_target(uninstall COMMAND "${CMAKE_COMMAND}" -E remove
-                                    "~/.local/bin/ludo")
+add_custom_target(uninstall COMMAND "${CMAKE_COMMAND}" -E remove "~/.local/bin/ludo")
 
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|AppleClang|GNU")

@@ -1,0 +1,7 @@
+# if cmake is used
+build/
+class_tries/
+random_files/
+oop.cxx
+tmp.cxx
+.clang*
