@@ -4,8 +4,7 @@
 #include <iostream>
 #include <string>
 
-// gameboard, nothing: _ = 0, blue: B = 1, red: R = 2, green: G = 3, yellow: Y =
-// 4
+// gameboard, nothing: _ = 0, blue: B = 1, red: R = 2, green: G = 3, yellow: Y = 4
 int board[52]{};
 
 struct colour {
